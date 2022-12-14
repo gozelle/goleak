@@ -23,8 +23,8 @@ package goleak
 import (
 	"strings"
 	"time"
-
-	"go.uber.org/goleak/internal/stack"
+	
+	"github.com/gozelle/goleak/internal/stack"
 )
 
 // Option lets users specify custom verifications.
@@ -60,7 +60,7 @@ func (f optionFunc) apply(opts *opts) { f(opts) }
 
 // IgnoreTopFunction ignores any goroutines where the specified function
 // is at the top of the stack. The function name should be fully qualified,
-// e.g., go.uber.org/goleak.IgnoreTopFunction
+// e.g., github.com/gozelle/goleak.IgnoreTopFunction
 func IgnoreTopFunction(f string) Option {
 	return addFilter(func(s stack.Stack) bool {
 		return s.FirstFunction() == f
@@ -133,7 +133,7 @@ func (o *opts) retry(i int) bool {
 	if i >= o.maxRetries {
 		return false
 	}
-
+	
 	d := time.Duration(int(time.Microsecond) << uint(i))
 	if d > o.maxSleep {
 		d = o.maxSleep
@@ -172,7 +172,7 @@ func isStdLibStack(s stack.Stack) bool {
 	if f := s.FirstFunction(); f == "os/signal.signal_recv" || f == "os/signal.loop" {
 		return true
 	}
-
+	
 	// Using signal.Notify will start a runtime goroutine.
 	return strings.Contains(s.Full(), "runtime.ensureSigM")
 }

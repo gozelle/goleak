@@ -24,8 +24,8 @@ import (
 	"runtime"
 	"strings"
 	"testing"
-
-	"go.uber.org/goleak/internal/stack"
+	
+	"github.com/gozelle/goleak/internal/stack"
 )
 
 type blockedG struct {
@@ -54,7 +54,7 @@ func (bg *blockedG) unblock() {
 
 func getStableAll(t *testing.T, cur stack.Stack) []stack.Stack {
 	all := stack.All()
-
+	
 	// There may be running goroutines that were just scheduled or finishing up
 	// from previous tests, so reduce flakiness by waiting till no other goroutines
 	// are runnable or running except the current goroutine.
@@ -62,15 +62,15 @@ func getStableAll(t *testing.T, cur stack.Stack) []stack.Stack {
 		if !isBackgroundRunning(cur, all) {
 			break
 		}
-
+		
 		if retry >= 100 {
 			t.Fatalf("background goroutines are possibly running, %v", all)
 		}
-
+		
 		runtime.Gosched()
 		all = stack.All()
 	}
-
+	
 	return all
 }
 
@@ -80,11 +80,11 @@ func isBackgroundRunning(cur stack.Stack, stacks []stack.Stack) bool {
 		if cur.ID() == s.ID() {
 			continue
 		}
-
+		
 		if strings.Contains(s.State(), "run") {
 			return true
 		}
 	}
-
+	
 	return false
 }

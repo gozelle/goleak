@@ -23,8 +23,8 @@ package goleak
 import (
 	"bytes"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
+	
+	"github.com/gozelle/testify/assert"
 )
 
 func init() {
@@ -47,7 +47,7 @@ func (d dummyTestMain) Run() int {
 func osStubs() (chan int, chan string) {
 	exitCode := make(chan int, 1)
 	stderr := make(chan string, 1)
-
+	
 	buf := &bytes.Buffer{}
 	_osStderr = buf
 	_osExit = func(code int) {
@@ -61,21 +61,21 @@ func osStubs() (chan int, chan string) {
 func TestVerifyTestMain(t *testing.T) {
 	defer clearOSStubs()
 	exitCode, stderr := osStubs()
-
+	
 	blocked := startBlockedG()
 	VerifyTestMain(dummyTestMain(7))
 	assert.Equal(t, 7, <-exitCode, "Exit code should not be modified")
 	assert.NotContains(t, <-stderr, "goleak: Errors", "Ignore leaks on unsuccessful runs")
-
+	
 	VerifyTestMain(dummyTestMain(0))
 	assert.Equal(t, 1, <-exitCode, "Expect error due to leaks on successful runs")
 	assert.Contains(t, <-stderr, "goleak: Errors", "Find leaks on successful runs")
-
+	
 	blocked.unblock()
 	VerifyTestMain(dummyTestMain(0))
 	assert.Equal(t, 0, <-exitCode, "Expect no errors without leaks")
 	assert.NotContains(t, <-stderr, "goleak: Errors", "No errors on successful run without leaks")
-
+	
 	cleanupCalled := false
 	cleanupExitcode := 0
 	VerifyTestMain(dummyTestMain(3), Cleanup(func(ec int) {

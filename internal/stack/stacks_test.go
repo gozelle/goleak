@@ -26,9 +26,9 @@ import (
 	"strings"
 	"sync"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	
+	"github.com/gozelle/testify/assert"
+	"github.com/gozelle/testify/require"
 )
 
 var _allDone chan struct{}
@@ -43,14 +43,14 @@ func TestAll(t *testing.T) {
 	// regardless of arguments on the stack.
 	_allDone = make(chan struct{})
 	defer close(_allDone)
-
+	
 	for i := 0; i < 5; i++ {
 		go waitForDone()
 	}
-
+	
 	cur := Current()
 	got := All()
-
+	
 	// Retry until the background stacks are not runnable/running.
 	for {
 		if !isBackgroundRunning(cur, got) {
@@ -59,14 +59,14 @@ func TestAll(t *testing.T) {
 		runtime.Gosched()
 		got = All()
 	}
-
+	
 	// We have exactly 7 gorotuines:
 	// "main" goroutine
 	// test goroutine
 	// 5 goroutines started above.
 	require.Len(t, got, 7)
 	sort.Sort(byGoroutineID(got))
-
+	
 	assert.Contains(t, got[0].Full(), "testing.(*T).Run")
 	assert.Contains(t, got[1].Full(), "TestAll")
 	for i := 0; i < 5; i++ {
@@ -78,8 +78,8 @@ func TestCurrent(t *testing.T) {
 	got := Current()
 	assert.NotZero(t, got.ID(), "Should get non-zero goroutine id")
 	assert.Equal(t, "running", got.State())
-	assert.Equal(t, "go.uber.org/goleak/internal/stack.getStackBuffer", got.FirstFunction())
-
+	assert.Equal(t, "github.com/gozelle/goleak/internal/stack.getStackBuffer", got.FirstFunction())
+	
 	wantFrames := []string{
 		"stack.getStackBuffer",
 		"stack.getStacks",
@@ -93,7 +93,7 @@ func TestCurrent(t *testing.T) {
 	}
 	assert.Contains(t, got.String(), "in state")
 	assert.Contains(t, got.String(), "on top of the stack")
-
+	
 	// Ensure that we are not returning the buffer without slicing it
 	// from getStackBuffer.
 	if len(got.Full()) > 1024 {
@@ -106,9 +106,9 @@ func TestAllLargeStack(t *testing.T) {
 		stackDepth    = 100
 		numGoroutines = 100
 	)
-
+	
 	var started sync.WaitGroup
-
+	
 	done := make(chan struct{})
 	for i := 0; i < numGoroutines; i++ {
 		var f func(int)
@@ -123,13 +123,13 @@ func TestAllLargeStack(t *testing.T) {
 		started.Add(1)
 		go f(stackDepth)
 	}
-
+	
 	started.Wait()
 	buf := getStackBuffer(true /* all */)
 	if len(buf) <= _defaultBufferSize {
 		t.Fatalf("Expected larger stack buffer")
 	}
-
+	
 	// Start enough goroutines so we exceed the default buffer size.
 	close(done)
 }
@@ -147,11 +147,11 @@ func isBackgroundRunning(cur Stack, stacks []Stack) bool {
 		if cur.ID() == s.ID() {
 			continue
 		}
-
+		
 		if strings.Contains(s.State(), "run") {
 			return true
 		}
 	}
-
+	
 	return false
 }

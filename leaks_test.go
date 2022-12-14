@@ -25,9 +25,9 @@ import (
 	"sync"
 	"testing"
 	"time"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	
+	"github.com/gozelle/testify/assert"
+	"github.com/gozelle/testify/require"
 )
 
 // Ensure that testingT is a subset of testing.TB.
@@ -43,19 +43,19 @@ func TestFind(t *testing.T) {
 	t.Run("Should find no leaks by default", func(t *testing.T) {
 		require.NoError(t, Find())
 	})
-
+	
 	t.Run("Find leaks with leaked goroutine", func(t *testing.T) {
 		bg := startBlockedG()
 		err := Find(testOptions())
 		require.Error(t, err, "Should find leaks with leaked goroutine")
 		assert.ErrorContains(t, err, "blockedG")
-		assert.ErrorContains(t, err, "created by go.uber.org/goleak.startBlockedG")
-
+		assert.ErrorContains(t, err, "created by github.com/gozelle/goleak.startBlockedG")
+		
 		// Once we unblock the goroutine, we shouldn't have leaks.
 		bg.unblock()
 		require.NoError(t, Find(), "Should find no leaks by default")
 	})
-
+	
 	t.Run("Find can't take in Cleanup option", func(t *testing.T) {
 		err := Find(Cleanup(func(int) { assert.Fail(t, "this should not be called") }))
 		require.Error(t, err, "Should exit with invalid option")
@@ -66,7 +66,7 @@ func TestFindRetry(t *testing.T) {
 	// for i := 0; i < 10; i++ {
 	bg := startBlockedG()
 	require.Error(t, Find(testOptions()), "Should find leaks with leaked goroutine")
-
+	
 	go func() {
 		time.Sleep(time.Millisecond)
 		bg.unblock()
@@ -87,13 +87,13 @@ func TestVerifyNone(t *testing.T) {
 		ft := &fakeT{}
 		VerifyNone(ft)
 		require.Empty(t, ft.errors, "Expect no errors from VerifyNone")
-
+		
 		bg := startBlockedG()
 		VerifyNone(ft, testOptions())
 		require.NotEmpty(t, ft.errors, "Expect errors from VerifyNone on leaked goroutine")
 		bg.unblock()
 	})
-
+	
 	t.Run("cleanup registered callback should be called", func(t *testing.T) {
 		ft := &fakeT{}
 		cleanupCalled := false
@@ -108,55 +108,55 @@ func TestVerifyNone(t *testing.T) {
 func TestIgnoreCurrent(t *testing.T) {
 	t.Run("Should ignore current", func(t *testing.T) {
 		defer VerifyNone(t)
-
+		
 		done := make(chan struct{})
 		go func() {
 			<-done
 		}()
-
+		
 		// We expect the above goroutine to be ignored.
 		VerifyNone(t, IgnoreCurrent())
 		close(done)
 	})
-
+	
 	t.Run("Should detect new leaks", func(t *testing.T) {
 		defer VerifyNone(t)
-
+		
 		// There are no leaks currently.
 		VerifyNone(t)
-
+		
 		done1 := make(chan struct{})
 		done2 := make(chan struct{})
-
+		
 		go func() {
 			<-done1
 		}()
-
+		
 		err := Find()
 		require.Error(t, err, "Expected to find background goroutine as leak")
-
+		
 		opt := IgnoreCurrent()
 		VerifyNone(t, opt)
-
+		
 		// A second goroutine started after IgnoreCurrent is a leak
 		go func() {
 			<-done2
 		}()
-
+		
 		err = Find(opt)
 		require.Error(t, err, "Expect second goroutine to be flagged as a leak")
-
+		
 		close(done1)
 		close(done2)
 	})
-
+	
 	t.Run("Should not ignore false positive", func(t *testing.T) {
 		defer VerifyNone(t)
-
+		
 		const goroutinesCount = 5
 		var wg sync.WaitGroup
 		done := make(chan struct{})
-
+		
 		// Spawn few goroutines before checking leaks
 		for i := 0; i < goroutinesCount; i++ {
 			wg.Add(1)
@@ -165,27 +165,27 @@ func TestIgnoreCurrent(t *testing.T) {
 				wg.Done()
 			}()
 		}
-
+		
 		// Store all goroutines
 		option := IgnoreCurrent()
-
+		
 		// Free goroutines
 		close(done)
 		wg.Wait()
-
+		
 		// We expect the below goroutines to be founded.
 		for i := 0; i < goroutinesCount; i++ {
 			ch := make(chan struct{})
-
+			
 			go func() {
 				<-ch
 			}()
-
+			
 			require.Error(t, Find(option), "Expect spawned goroutine to be flagged as a leak")
-
+			
 			// Free spawned goroutine
 			close(ch)
-
+			
 			// Make sure that there are no leaks
 			VerifyNone(t)
 		}
@@ -196,7 +196,7 @@ func TestVerifyParallel(t *testing.T) {
 	t.Run("parallel", func(t *testing.T) {
 		t.Parallel()
 	})
-
+	
 	t.Run("serial", func(t *testing.T) {
 		VerifyNone(t)
 	})

@@ -23,17 +23,17 @@ package goleak
 import (
 	"testing"
 	"time"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.uber.org/goleak/internal/stack"
+	
+	"github.com/gozelle/goleak/internal/stack"
+	"github.com/gozelle/testify/assert"
+	"github.com/gozelle/testify/require"
 )
 
 func TestOptionsFilters(t *testing.T) {
 	opts := buildOpts()
 	cur := stack.Current()
 	all := getStableAll(t, cur)
-
+	
 	// At least one of these should be the same as current, the others should be filtered out.
 	for _, s := range all {
 		if s.ID() == cur.ID() {
@@ -42,9 +42,9 @@ func TestOptionsFilters(t *testing.T) {
 			require.True(t, opts.filter(s), "Default goroutines should be filtered: %v", s)
 		}
 	}
-
+	
 	defer startBlockedG().unblock()
-
+	
 	// Now the filters should find something that doesn't match a filter.
 	countUnfiltered := func() int {
 		var unmatched int
@@ -59,9 +59,9 @@ func TestOptionsFilters(t *testing.T) {
 		return unmatched
 	}
 	require.Equal(t, 1, countUnfiltered(), "Expected blockedG goroutine to not match any filter")
-
+	
 	// If we add an extra filter to ignore blockTill, it shouldn't match.
-	opts = buildOpts(IgnoreTopFunction("go.uber.org/goleak.(*blockedG).run"))
+	opts = buildOpts(IgnoreTopFunction("github.com/gozelle/goleak.(*blockedG).run"))
 	require.Zero(t, countUnfiltered(), "blockedG should be filtered out. running: %v", stack.All())
 }
 
@@ -69,7 +69,7 @@ func TestOptionsRetry(t *testing.T) {
 	opts := buildOpts()
 	opts.maxRetries = 50 // initial attempt + 50 retries = 11
 	opts.maxSleep = time.Millisecond
-
+	
 	for i := 0; i < 50; i++ {
 		assert.True(t, opts.retry(i), "Attempt %v/51 should allow retrying", i)
 	}
